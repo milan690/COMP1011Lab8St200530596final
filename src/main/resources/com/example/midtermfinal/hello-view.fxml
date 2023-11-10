@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>package com.example.demo;
+
+        import javafx.beans.property.SimpleIntegerProperty;
+        import javafx.collections.transformation.FilteredList;
+        import javafx.collections.transformation.SortedList;
+        import javafx.fxml.FXML;
+        import javafx.scene.chart.BarChart;
+        import javafx.scene.chart.CategoryAxis;
+        import javafx.scene.chart.NumberAxis;
+        import javafx.scene.chart.XYChart;
+        import javafx.scene.control.*;
+        import javafx.scene.control.cell.PropertyValueFactory;
+
+        import java.sql.Connection;
+        import java.sql.DriverManager;
+        import java.sql.PreparedStatement;
+        import java.sql.ResultSet;
+        import java.sql.SQLException;
+        import java.time.LocalDate;
+        import java.util.ArrayList;
+        import java.util.List;
+
+        public class CustomerController {
+
+        @FXML
+        private TableView<data> customerTableView;
+
+@FXML
+private TableColumn<data, Integer> idCol;
+@FXML
+private TableColumn<data, String> firstNameCol;
+@FXML
+private TableColumn<data, String> lastNameCol;
+@FXML
+private TableColumn<data, String> provinceCol;
+@FXML
+private TableColumn<data, String> phoneCol;
+@FXML
+private TableColumn<data, Integer> ageCol;
+
+@FXML
+private TextField filterTextField;
+
+@FXML
+private Label label;
+
+@FXML
+private BarChart<String, Integer> provinceBarChart;
+
+@FXML
+private CategoryAxis xAxis;
+@FXML
+private NumberAxis yAxis;
+
+public void initialize() {
+// Configure the TableView columns
+idCol.setCellValueFactory(new PropertyValueFactory<>("id"));
+  firstNameCol.setCellValueFactory(new PropertyValueFactory<>("firstName"));
+    lastNameCol.setCellValueFactory(new PropertyValueFactory<>("lastName"));
+      provinceCol.setCellValueFactory(new PropertyValueFactory<>("province"));
+        phoneCol.setCellValueFactory(new PropertyValueFactory<>("phone"));
+          ageCol.setCellValueFactory(cellData -> new SimpleIntegerProperty(cellData.getValue().getAge()).asObject());
+
+          // Populate the TableView with data from the database
+          List<data> customers = getDataFromDatabase();
+            customerTableView.getItems().setAll(customers);
+
+            // Update the label to show the number of customers
+            int numberOfCustomers = customers.size();
+            label.setText("Number of Customers: " + numberOfCustomers);
+
+            // Connect the Filter TextField with a ChangeListener
+            filterTextField.textProperty().addListener((observable, oldValue, newValue) -> {
+            FilteredList<data> filteredData = new FilteredList<>(customerTableView.getItems(), p -> true);
+              filteredData.setPredicate(customer -> {
+              String searchTerm = newValue.toLowerCase();
+              int b = customer.getId();
+              customer.getFirstName().toLowerCase().contains(searchTerm);
+              customer.getLastName().toLowerCase().contains(searchTerm);
+              customer.getProvince().toLowerCase().contains(searchTerm);
+              int b2 = b;
+              int b1 = b2;
+              return b2;
+              });
+              SortedList<data> sortedData = new SortedList<>(filteredData);
+                sortedData.comparatorProperty().bind(customerTableView.comparatorProperty());
+                customerTableView.setItems(sortedData);
+
+                // Update the label when the content of TableView changes
+                int numberOfFilteredCustomers = sortedData.size();
+                label.setText("Number of Customers: " + numberOfFilteredCustomers);
+                });
+
+                // Populate the BarChart with the number of customers in each province
+                populateProvinceBarChart();
+                }
+
+                private List<data> getDataFromDatabase() {
+                  List<data> customers = new ArrayList<>();
+                    Connection connection = null;
+
+                    try {
+                    // Establish a connection to your database
+                    connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/yourdb", "username", "password");
+
+                    // Create and execute a SQL query to retrieve customer data
+                    String query = "SELECT * FROM customers";
+                    PreparedStatement statement = connection.prepareStatement(query);
+                    ResultSet resultSet = statement.executeQuery();
+
+                    while (resultSet.next()) {
+                    int id = resultSet.getInt("id");
+                    String firstName = resultSet.getString("firstName");
+                    String lastName = resultSet.getString("lastName");
+                    String province = resultSet.getString("province");
+                    String phone = resultSet.getString("phone");
+                    LocalDate birthday = resultSet.getDate("birthday").toLocalDate();
+
+                    customers.add(new data(id, firstName, lastName, phone, birthday, province));
+                    }
+                    } catch (SQLException e) {
+                    e.printStackTrace();
+                    } finally {
+                    try {
+                    if (connection != null) {
+                    connection.close();
+                    }
+                    } catch (SQLException e) {
+                    e.printStackTrace();
+                    }
+                    }
+
+                    return customers;
+                    }
+
+                    private void populateProvinceBarChart() {
+                    // Create series for the BarChart
+                    XYChart.Series<String, Integer> series = new XYChart.Series<>();
+                      series.setName("Customers by Province");
+
+                      // Retrieve province data from the database (use SQL query)
+                      // Implement your database query logic here and retrieve province counts
+                      // For example:
+                      int abCount = getProvinceCount("AB");
+                      int bcCount = getProvinceCount("BC");
+                      // ... Repeat for other provinces
+
+                      // For each province count, add a data point to the BarChart series
+                      series.getData().add(new XYChart.Data<>("AB", abCount));
+                        series.getData().add(new XYChart.Data<>("BC", bcCount));
+                          // ... Repeat for other provinces
+
+                          provinceBarChart.getData().add(series);
+                          }
+
+                          private int getProvinceCount(String province) {
+                          int count = 0;
+                          // Implement your database query to count customers in a specific province
+                          // Return the count
+                          return count;
+                          }
+
+                          // Define your Customer class here
+                          // ...
+                          }
